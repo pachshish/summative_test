@@ -158,7 +158,7 @@ def load_terror_attacks_from_csv(session, csv_file: str):
 def add_csv1_to_db():
     db_uri = database_uri
     session = create_session(db_uri)
-    csv_path = 'csv_data1/data1.csv'
+    csv_path = 'csv_data1/data1_big.csv'
 
     load_countries_from_csv(session, csv_path)
     load_region_from_csv(session, csv_path)

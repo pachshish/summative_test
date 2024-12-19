@@ -1,7 +1,7 @@
 from flask import Blueprint
 
 from csv_data1.add_csv_to_db import add_csv1_to_db
-from services.end_point_service import fatal_attack_service, fatal_area_service
+from services.end_point_service import fatal_attack_service, top_5_groups_with_casualties_service
 
 terror_csv_bp = Blueprint('terror_bp', __name__, url_prefix='/terror_csv')
 
@@ -26,10 +26,11 @@ def find_fatal_attack():
     except Exception as e:
         return f"Failed to get fatal attack data: {e}", 500
 
-@terror_csv_bp.route('/fatal_area', methods=['GET'])
-def find_fatal_area():
+
+@terror_csv_bp.route('/top_5_groups_with_casualties', methods=['GET'])
+def find_top_5_groups_with_casualties():
     try:
-        fatal_area = fatal_area_service()
-        return fatal_area, 200
+        top_5_groups = top_5_groups_with_casualties_service()
+        return top_5_groups, 200
     except Exception as e:
-        return f"Failed to get fatal attack area data: {e}", 500
+        return f"Failed to get top 5 groups with casualties data: {e}", 500
