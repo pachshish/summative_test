@@ -1,6 +1,9 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date
 from sqlalchemy.orm import relationship
-from db.config.init_db import Base
+from sqlalchemy.orm import declarative_base
+
+
+Base = declarative_base()
 
 class Location(Base):
     __tablename__ = 'locations'
@@ -16,18 +19,15 @@ class TerrorAttack(Base):
     __tablename__ = 'terror_attack'
 
     id = Column(Integer(), primary_key=True)
-    year = Column(Integer(), nullable=False)
-    month = Column(Integer(), nullable=False)
-    day = Column(Integer(), nullable=False)
-    country_id = Column(Integer(), ForeignKey('countries.id'), nullable=False)
-    region_id = Column(Integer(), nullable=False)
+    date = Column(Date, nullable=False)
+    country_id = Column(Integer(), ForeignKey('countries.country_id'), nullable=False)
+    region_id = Column(Integer(), ForeignKey('regions.region_id'), nullable=False)
     provstate = Column(String(255), nullable=False)
     city = Column(String(255), nullable=False)
     location_id = Column(Integer, ForeignKey('locations.id'), nullable=False)
-
-    attack_type_id = Column(Integer(), ForeignKey('attack_types.id'), nullable=False)
-    target_type_id = Column(Integer(), ForeignKey('target_types.id'), nullable=False)
-    target_specific_type_id = Column(Integer(), ForeignKey('target_specific_types.id'), nullable=False)
+    attack_type_id = Column(Integer(), ForeignKey('attack_types.attack_type_id'), nullable=False)
+    target_type_id = Column(Integer(), ForeignKey('target_types.target_type_id'), nullable=False)
+    target_specific_type_id = Column(Integer(), ForeignKey('target_specific_types.target_type_specific_id'), nullable=False)
     group_name = Column(String(255), nullable=False)
     num_of_terrorists = Column(Integer())
     num_of_dead = Column(Integer())
@@ -44,8 +44,8 @@ class TerrorAttack(Base):
 
 class Country(Base):
     __tablename__ = 'countries'
-    id = Column(Integer(), primary_key=True)
-    country_id = Column(Integer(), unique=True, nullable=False)
+    # id = Column(Integer(), primary_key=True)
+    country_id = Column(Integer() , primary_key=True, unique=True, nullable=False)
     country_name = Column(String(255), nullable=False)
 
     # Back reference
@@ -53,18 +53,18 @@ class Country(Base):
 
 class Region(Base):
     __tablename__ = 'regions'
-    id = Column(Integer(), primary_key=True)
-    region_id = Column(Integer(), unique=True, nullable=False)
+    # id = Column(Integer(), primary_key=True)
+    region_id = Column(Integer(), primary_key=True, unique=True, nullable=False)
     region_name = Column(String(255), nullable=False)
 
     # Back reference
-    terror_attacks = relationship('TerrorAttack', back_populates='country')
+    terror_attacks = relationship('TerrorAttack', back_populates='region')
 
 
 class Attack(Base):
     __tablename__ = 'attack_types'
-    id = Column(Integer(), primary_key=True)
-    attack_type_id = Column(Integer(), unique=True, nullable=False)
+    # id = Column(Integer(), primary_key=True)
+    attack_type_id = Column(Integer(), primary_key=True, unique=True, nullable=False)
     attack_type_name = Column(String(255), nullable=False)
 
     # Back reference
@@ -73,8 +73,8 @@ class Attack(Base):
 
 class Target(Base):
     __tablename__ = 'target_types'
-    id = Column(Integer(), primary_key=True)
-    target_type_id = Column(Integer(), unique=True, nullable=False)
+    # id = Column(Integer(), primary_key=True)
+    target_type_id = Column(Integer(), primary_key=True, unique=True, nullable=False)
     target_type_name = Column(String(255), nullable=False)
 
     # Back reference
@@ -83,8 +83,8 @@ class Target(Base):
 
 class TargetSpecific(Base):
     __tablename__ = 'target_specific_types'
-    id = Column(Integer(), primary_key=True)
-    target_type_specific_id = Column(Integer(), unique=True, nullable=False)
+    # id = Column(Integer(), primary_key=True)
+    target_type_specific_id = Column(Integer(), primary_key=True, unique=True, nullable=False)
     target_type_specific_name = Column(String(255), nullable=False)
 
     # Back reference
