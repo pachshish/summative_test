@@ -5,6 +5,8 @@ from flask import jsonify, request
 import pandas as pd
 import folium
 from folium.plugins import MarkerCluster
+from sqlalchemy import func
+
 import os
 
 
@@ -80,3 +82,83 @@ def fatal_area_service():
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+
+def active_terror_groups_service():
+        session = create_session(database_uri)
+        region_id = request.args.get('region_id', 'false').lower() == 'true'
+
+
+        # שאילתה לבסיס הנתונים
+        query = session.query(
+            TerrorAttack.region_id,
+            TerrorAttack.group_name,
+            Location.latitude,
+            Location.longitude,
+            func.count(TerrorAttack.id).label('attack_count')
+        ).join(
+            Location, TerrorAttack.location_id == Location.id
+        ).filter(
+            TerrorAttack.group_name.isnot(None),
+            Location.latitude.isnot(None),
+            Location.longitude.isnot(None)
+        ).group_by(
+             TerrorAttack.region_id,
+             TerrorAttack.group_name,
+             Location.latitude,
+             Location.longitude
+        )
+
+        if region_id:
+            query = query.filter(TerrorAttack.region_id == region_id)
+
+        # המרת התוצאות ל-DataFrame
+        df = pd.DataFrame(query.all(), columns=['region_id', 'group_name', 'latitude', 'longitude', 'attack_count'])
+
+        # חישוב כמות התקפות לפי קבוצה ואזור
+        top_groups_by_region = (
+            df.groupby(['region_id', 'group_name'])['attack_count']
+            .sum()
+            .reset_index()
+            .sort_values(by='attack_count', ascending=False)
+        )
+
+        # יצירת מפה
+        map_center = [df['latitude'].mean(), df['longitude'].mean()]
+        folium_map = folium.Map(location=map_center, zoom_start=2)
+
+        # יצירת Cluster של המרקרים
+        marker_cluster = MarkerCluster().add_to(folium_map)
+
+        # הוספת נקודות למפה
+        for region in top_groups_by_region['region_id'].unique():
+            region_data = top_groups_by_region[top_groups_by_region['region_id'] == region]
+            most_active_group = region_data.iloc[0]
+            group_popup = f"Most Active Group: {most_active_group['group_name']}<br>Total Attacks: {most_active_group['attack_count']}<br><br>Top 5 Groups:<br>"
+
+            for _, row in region_data.head(5).iterrows():
+                group_popup += f"{row['group_name']}: {row['attack_count']} attacks<br>"
+
+            region_location = df[df['region_id'] == region].iloc[0]
+            folium.Marker(
+                location=[region_location['latitude'], region_location['longitude']],
+                popup=group_popup
+            ).add_to(marker_cluster)
+
+        # שמירת המפה לתיקייה
+        output_dir = os.path.join(os.getcwd(), 'maps')
+        os.makedirs(output_dir, exist_ok=True)
+
+        output_file = os.path.join(output_dir, 'active_terror_groups_map.html')
+        folium_map.save(output_file)
+
+        response_data = top_groups_by_region.to_dict(orient='records')
+
+        return jsonify(response_data)
+
+
+
+
+
+
